@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Resource Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-heart"></i>
+                    <h1>Community Resource Dashboard</h1>
+                </div>
+                <nav class="nav">
+                    <button id="resources-tab" class="nav-btn active">
+                        <i class="fas fa-hospital"></i> Resources
+                    </button>
+                    <button id="emergency-tab" class="nav-btn">
+                        <i class="fas fa-exclamation-triangle"></i> Emergency
+                    </button>
+                    <button id="volunteer-tab" class="nav-btn">
+                        <i class="fas fa-hands-helping"></i> Volunteer
+                    </button>
+                    <button id="admin-tab" class="nav-btn">
+                        <i class="fas fa-cog"></i> Admin
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Resources Section -->
+            <section id="resources-section" class="section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-hospital"></i> Community Resources</h2>
+                    <div class="filters">
+                        <select id="category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <input type="text" id="search-input" placeholder="Search resources...">
+                        <button id="toggle-map" class="btn btn-secondary">
+                            <i class="fas fa-map"></i> Toggle Map
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-layout">
+                    <!-- Resource List -->
+                    <div id="resource-list" class="resource-list">
+                        <div class="loading">Loading resources...</div>
+                    </div>
+
+                    <!-- Map -->
+                    <div id="map-container" class="map-container">
+                        <div id="map" class="map"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Emergency Section -->
+            <section id="emergency-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Submit Emergency Request</h2>
+                    <p class="subtitle">Get immediate help from community resources and volunteers</p>
+                </div>
+
+                <div class="emergency-form-container">
+                    <form id="emergency-form" class="emergency-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="requester-name">Your Name *</label>
+                                <input type="text" id="requester-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="requester-phone">Phone Number</label>
+                                <input type="tel" id="requester-phone">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="requester-email">Email</label>
+                                <input type="email" id="requester-email">
+                            </div>
+                            <div class="form-group">
+                                <label for="emergency-category">Category</label>
+                                <select id="emergency-category">
+                                    <option value="">Select category</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emergency-description">Description *</label>
+                            <textarea id="emergency-description" rows="4" required 
+                                placeholder="Please describe your situation in detail..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emergency-location">Location</label>
+                            <input type="text" id="emergency-location" 
+                                placeholder="Enter your address or location">
+                            <button type="button" id="use-current-location" class="btn btn-secondary">
+                                <i class="fas fa-location-arrow"></i> Use Current Location
+                            </button>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane"></i> Submit Emergency Request
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Emergency Requests List -->
+                    <div class="emergency-requests">
+                        <h3>Recent Emergency Requests</h3>
+                        <div id="emergency-list" class="emergency-list">
+                            <div class="loading">Loading emergency requests...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Volunteer Section -->
+            <section id="volunteer-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-hands-helping"></i> Volunteer Registration</h2>
+                    <p class="subtitle">Join our community of helpers</p>
+                </div>
+
+                <div class="volunteer-container">
+                    <form id="volunteer-form" class="volunteer-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="volunteer-name">Full Name *</label>
+                                <input type="text" id="volunteer-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="volunteer-email">Email *</label>
+                                <input type="email" id="volunteer-email" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="volunteer-phone">Phone Number</label>
+                                <input type="tel" id="volunteer-phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="volunteer-location">Location</label>
+                                <input type="text" id="volunteer-location">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="volunteer-skills">Skills & Expertise</label>
+                            <textarea id="volunteer-skills" rows="3" 
+                                placeholder="e.g., First Aid, Transportation, Food Service, General Help"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="volunteer-availability">Availability</label>
+                            <textarea id="volunteer-availability" rows="2" 
+                                placeholder="e.g., Weekends, Evenings, Flexible"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Register as Volunteer
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Volunteers List -->
+                    <div class="volunteers-list">
+                        <h3>Active Volunteers</h3>
+                        <div id="volunteers-grid" class="volunteers-grid">
+                            <div class="loading">Loading volunteers...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Section -->
+            <section id="admin-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cog"></i> Admin Dashboard</h2>
+                    <p class="subtitle">Manage resources and monitor activities</p>
+                </div>
+
+                <div class="admin-dashboard">
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-hospital"></i></div>
+                            <div class="stat-content">
+                                <h3 id="total-resources">-</h3>
+                                <p>Active Resources</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="stat-content">
+                                <h3 id="total-requests">-</h3>
+                                <p>Open Requests</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-hands-helping"></i></div>
+                            <div class="stat-content">
+                                <h3 id="total-volunteers">-</h3>
+                                <p>Active Volunteers</p>
+                            </div>
+                        </div>
+                        <div class="stat-card priority">
+                            <div class="stat-icon"><i class="fas fa-bell"></i></div>
+                            <div class="stat-content">
+                                <h3 id="high-priority-requests">-</h3>
+                                <p>High Priority</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Actions -->
+                    <div class="admin-actions">
+                        <h3>Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button id="refresh-data" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                            <button id="export-data" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> Export Data
+                            </button>
+                            <button id="view-logs" class="btn btn-info">
+                                <i class="fas fa-list"></i> View Activity Logs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="recent-activity">
+                        <h3>Recent Activity</h3>
+                        <div id="activity-log" class="activity-log">
+                            <div class="loading">Loading activity...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Status Messages -->
+        <div id="status-messages" class="status-messages"></div>
+
+        <!-- Real-time Notifications -->
+        <div id="notifications" class="notifications"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/realtime.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
