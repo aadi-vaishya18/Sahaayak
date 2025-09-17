@@ -91,6 +91,21 @@ const initializeDatabase = () => {
     )
   `);
 
+  // Create users table for authentication
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'admin',
+      status TEXT DEFAULT 'active',
+      last_login DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   console.log('Database schema created successfully');
 };
 
@@ -111,79 +126,79 @@ const insertSampleData = () => {
       [category.id, category.name, category.description, category.icon, category.color]);
   });
 
-  // Sample resources
+  // Sample resources with India-oriented names and addresses
   const resources = [
     {
       id: uuidv4(),
-      name: 'City General Hospital',
-      description: '24/7 emergency services and general healthcare',
+      name: 'AIIMS Delhi',
+      description: '24/7 emergency services and specialized healthcare',
       category_id: categories[0].id, // Healthcare
-      address: '123 Main St, Downtown',
-      latitude: 40.7128,
-      longitude: -74.0060,
-      phone: '+1-555-0123',
-      email: 'info@citygeneral.com',
-      website: 'https://citygeneral.com',
+      address: 'Ansari Nagar, New Delhi, Delhi 110029',
+      latitude: 28.5672,
+      longitude: 77.2100,
+      phone: '+91-11-2659-8955',
+      email: 'info@aiims.edu',
+      website: 'https://www.aiims.edu',
+      operating_hours: '24/7',
+      capacity: 2500,
+      current_availability: 450
+    },
+    {
+      id: uuidv4(),
+      name: 'Sahaara Shelter Home',
+      description: 'Emergency shelter for families and individuals',
+      category_id: categories[1].id, // Shelter
+      address: 'Sector 15, Gurgaon, Haryana 122001',
+      latitude: 28.4595,
+      longitude: 77.0266,
+      phone: '+91-124-427-8900',
+      email: 'contact@sahaarashelter.org',
       operating_hours: '24/7',
       capacity: 200,
       current_availability: 45
     },
     {
       id: uuidv4(),
-      name: 'Safe Haven Shelter',
-      description: 'Emergency shelter for families and individuals',
-      category_id: categories[1].id, // Shelter
-      address: '456 Oak Ave, Midtown',
-      latitude: 40.7589,
-      longitude: -73.9851,
-      phone: '+1-555-0456',
-      email: 'contact@safehavenshelter.org',
-      operating_hours: '24/7',
-      capacity: 50,
-      current_availability: 12
-    },
-    {
-      id: uuidv4(),
-      name: 'Community Food Bank',
-      description: 'Free food distribution and meal programs',
+      name: 'Annapurna Food Bank',
+      description: 'Free food distribution and community kitchen',
       category_id: categories[2].id, // Food Distribution
-      address: '789 Pine St, Westside',
-      latitude: 40.7505,
-      longitude: -73.9934,
-      phone: '+1-555-0789',
-      email: 'help@communityfoodbank.org',
-      website: 'https://communityfoodbank.org',
-      operating_hours: 'Mon-Fri 9AM-5PM, Sat 10AM-2PM',
-      capacity: 100,
-      current_availability: 75
+      address: 'Karol Bagh, New Delhi, Delhi 110005',
+      latitude: 28.6519,
+      longitude: 77.1909,
+      phone: '+91-11-2575-3421',
+      email: 'help@annapurnafoodbank.org',
+      website: 'https://annapurnafoodbank.org',
+      operating_hours: 'Daily 7AM-9PM',
+      capacity: 500,
+      current_availability: 275
     },
     {
       id: uuidv4(),
-      name: 'Fire Station 15',
+      name: 'Delhi Fire Station - Connaught Place',
       description: 'Emergency response and fire services',
       category_id: categories[3].id, // Emergency Services
-      address: '321 Elm St, Northside',
-      latitude: 40.7831,
-      longitude: -73.9712,
-      phone: '+1-555-0321',
+      address: 'Connaught Place, New Delhi, Delhi 110001',
+      latitude: 28.6315,
+      longitude: 77.2167,
+      phone: '+91-11-2331-1111',
       operating_hours: '24/7',
-      capacity: 10,
-      current_availability: 8
+      capacity: 25,
+      current_availability: 18
     },
     {
       id: uuidv4(),
-      name: 'Hope Counseling Center',
+      name: 'Manas Mental Health Centre',
       description: 'Mental health support and counseling services',
       category_id: categories[4].id, // Mental Health
-      address: '654 Maple Dr, Southside',
-      latitude: 40.7282,
-      longitude: -74.0776,
-      phone: '+1-555-0654',
-      email: 'support@hopecounseling.org',
-      website: 'https://hopecounseling.org',
-      operating_hours: 'Mon-Fri 8AM-6PM, Sat 10AM-4PM',
-      capacity: 20,
-      current_availability: 5
+      address: 'Defence Colony, New Delhi, Delhi 110024',
+      latitude: 28.5706,
+      longitude: 77.2294,
+      phone: '+91-11-2433-7000',
+      email: 'support@manashealth.org',
+      website: 'https://manashealth.org',
+      operating_hours: 'Mon-Sat 9AM-6PM',
+      capacity: 100,
+      current_availability: 25
     }
   ];
 
@@ -196,40 +211,51 @@ const insertSampleData = () => {
        resource.operating_hours, resource.capacity, resource.current_availability]);
   });
 
-  // Sample volunteers
+  // Sample volunteers with Indian names and locations
   const volunteers = [
     {
       id: uuidv4(),
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+1-555-1001',
+      name: 'Rajesh Kumar',
+      email: 'rajesh.kumar@email.com',
+      phone: '+91-98765-43210',
       skills: 'First Aid, Transportation',
       availability: 'Weekends',
-      location: 'Downtown',
-      latitude: 40.7128,
-      longitude: -74.0060
+      location: 'Connaught Place, Delhi',
+      latitude: 28.6315,
+      longitude: 77.2167
     },
     {
       id: uuidv4(),
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+1-555-1002',
+      name: 'Priya Sharma',
+      email: 'priya.sharma@email.com',
+      phone: '+91-87654-32109',
       skills: 'Counseling, Food Service',
       availability: 'Evenings',
-      location: 'Midtown',
-      latitude: 40.7589,
-      longitude: -73.9851
+      location: 'Karol Bagh, Delhi',
+      latitude: 28.6519,
+      longitude: 77.1909
     },
     {
       id: uuidv4(),
-      name: 'Mike Davis',
-      email: 'mike.davis@email.com',
-      phone: '+1-555-1003',
+      name: 'Amit Singh',
+      email: 'amit.singh@email.com',
+      phone: '+91-76543-21098',
       skills: 'Transportation, General Help',
       availability: 'Flexible',
-      location: 'Westside',
-      latitude: 40.7505,
-      longitude: -73.9934
+      location: 'Gurgaon, Haryana',
+      latitude: 28.4595,
+      longitude: 77.0266
+    },
+    {
+      id: uuidv4(),
+      name: 'Sunita Devi',
+      email: 'sunita.devi@email.com',
+      phone: '+91-65432-10987',
+      skills: 'Medical Care, Community Outreach',
+      availability: 'Mornings',
+      location: 'Defence Colony, Delhi',
+      latitude: 28.5706,
+      longitude: 77.2294
     }
   ];
 

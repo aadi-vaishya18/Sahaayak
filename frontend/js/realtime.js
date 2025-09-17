@@ -12,12 +12,20 @@ class RealtimeManager {
     // Initialize Socket.IO connection
     init() {
         try {
+            // Check if Socket.IO is loaded
+            if (typeof io === 'undefined') {
+                console.warn('Socket.IO library not loaded, real-time features will be disabled');
+                showStatusMessage('Real-time features unavailable', 'warning');
+                return;
+            }
+            
             this.socket = io('http://localhost:3001', {
                 autoConnect: true,
                 timeout: 5000,
                 reconnection: true,
                 reconnectionAttempts: this.maxReconnectAttempts,
-                reconnectionDelay: this.reconnectDelay
+                reconnectionDelay: this.reconnectDelay,
+                transports: ['websocket', 'polling'] // Fallback to polling if websocket fails
             });
 
             this.setupEventListeners();

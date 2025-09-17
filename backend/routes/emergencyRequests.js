@@ -57,6 +57,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/emergency-requests/stats - Get emergency request statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await db.getResourceStatistics();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error fetching emergency request stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch statistics'
+    });
+  }
+});
+
 // GET /api/emergency-requests/:id - Get specific emergency request
 router.get('/:id', async (req, res) => {
   try {
@@ -275,24 +293,6 @@ router.put('/:id/assign', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to assign volunteer'
-    });
-  }
-});
-
-// GET /api/emergency-requests/stats - Get emergency request statistics
-router.get('/stats', async (req, res) => {
-  try {
-    const stats = await db.getResourceStatistics();
-    
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error) {
-    console.error('Error fetching emergency request stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch statistics'
     });
   }
 });

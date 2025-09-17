@@ -1,8 +1,8 @@
-// Map Configuration
-const DEFAULT_MAP_CENTER = [40.7128, -74.0060]; // New York City
-const DEFAULT_ZOOM = 13;
+// Map Configuration for India
+const DEFAULT_MAP_CENTER = [20.5937, 78.9629]; // Center of India
+const DEFAULT_ZOOM = 6;
 const MAX_ZOOM = 18;
-const MIN_ZOOM = 10;
+const MIN_ZOOM = 4;
 
 // Map Manager Class
 class MapManager {
@@ -25,15 +25,24 @@ class MapManager {
     // Initialize the map
     initMap(center = DEFAULT_MAP_CENTER, zoom = DEFAULT_ZOOM) {
         try {
-            // Create the map
+            // Create the map with explicit dimensions
             this.map = L.map(this.containerId, {
                 center: center,
                 zoom: zoom,
                 maxZoom: MAX_ZOOM,
                 minZoom: MIN_ZOOM,
                 zoomControl: true,
-                attributionControl: true
+                attributionControl: true,
+                preferCanvas: false
             });
+            
+            // Ensure the container has proper dimensions
+            const container = document.getElementById(this.containerId);
+            if (container) {
+                container.style.height = '500px';
+                container.style.width = '100%';
+                container.style.minHeight = '500px';
+            }
 
             // Add tile layer (OpenStreetMap)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -49,6 +58,14 @@ class MapManager {
 
             // Try to get user's current location
             this.addUserLocation();
+            
+            // Force map resize after a short delay
+            setTimeout(() => {
+                if (this.map) {
+                    this.map.invalidateSize();
+                    console.log('Map resized and initialized');
+                }
+            }, 500);
 
             console.log('Map initialized successfully');
             return this.map;
@@ -447,14 +464,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
         try {
+            // Ensure Leaflet is loaded
+            if (typeof L === 'undefined') {
+                console.error('Leaflet library not loaded');
+                mapContainer.innerHTML = `
+                    <div class="map-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Map library not loaded. Please refresh the page.</p>
+                    </div>
+                `;
+                return;
+            }
+            
             mapManager = new MapManager('map');
             mapManager.initMap();
+            console.log('Map initialized successfully');
         } catch (error) {
             console.error('Failed to initialize map:', error);
-            document.getElementById('map').innerHTML = `
+            mapContainer.innerHTML = `
                 <div class="map-error">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Failed to load map. Please refresh the page.</p>
+                    <p>Failed to load map: ${error.message}</p>
+                    <button onclick="location.reload()" class="btn btn-secondary">Retry</button>
                 </div>
             `;
         }

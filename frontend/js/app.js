@@ -1,4 +1,4 @@
-// Main Application Controller
+// Main Application Controller with Authentication and i18n
 class CommunityResourceApp {
     constructor() {
         this.currentSection = 'resources';
@@ -12,6 +12,7 @@ class CommunityResourceApp {
             location: null
         };
         this.currentLocation = null;
+        this.isAuthenticated = false;
     }
 
     // Initialize the application
@@ -19,19 +20,134 @@ class CommunityResourceApp {
         try {
             console.log('Initializing Community Resource Dashboard...');
             
+            // Initialize i18n
+            i18n.init();
+            
             // Setup event listeners
             this.setupEventListeners();
+            
+            // Setup user interface (no auth check required for main app)
+            this.setupUserInterface();
             
             // Load initial data
             await this.loadInitialData();
             
-            // Load default section
-            await this.loadResourcesSection();
+            // Check for URL hash to determine initial section
+            const hash = window.location.hash.substring(1);
+            if (hash && ['resources', 'emergency', 'volunteer', 'admin'].includes(hash)) {
+                await this.switchSection(hash);
+            } else {
+                // Load default section
+                await this.loadResourcesSection();
+            }
             
             console.log('Application initialized successfully');
         } catch (error) {
             console.error('Failed to initialize application:', error);
             showStatusMessage('Failed to initialize application', 'error');
+        }
+    }
+
+    // Check authentication status (only for admin section)
+    checkAuthenticationForAdmin() {
+        if (!authManager.isAuth()) {
+            // Redirect to admin login page
+            this.showAdminLogin();
+            return false;
+        }
+        
+        this.isAuthenticated = true;
+        return true;
+    }
+
+    // Show admin login modal or redirect
+    showAdminLogin() {
+        // Show a simple prompt or redirect to login page in the same window
+        const shouldLogin = confirm('Admin access required. Click OK to go to login page.');
+        if (shouldLogin) {
+            // Store current state and redirect to login
+            sessionStorage.setItem('redirectAfterLogin', 'admin');
+            window.location.href = 'login.html';
+        } else {
+            // Switch back to previous section
+            this.switchSection('resources');
+        }
+    }
+
+    // Setup user interface elements
+    setupUserInterface() {
+        // Check if user is authenticated to show user controls
+        const user = authManager.getCurrentUser();
+        const userControls = document.querySelector('.user-controls');
+        
+        if (user && userControls) {
+            // Show authenticated user interface
+            const userNameElement = document.getElementById('user-name');
+            const userRoleElement = document.getElementById('user-role');
+            
+            if (userNameElement) userNameElement.textContent = user.name || 'Admin User';
+            if (userRoleElement) userRoleElement.textContent = user.role || 'Administrator';
+            
+            // Setup user menu dropdown
+            this.setupUserMenu();
+        } else {
+            // Hide user controls for non-authenticated users
+            if (userControls) {
+                const userMenu = userControls.querySelector('.user-menu');
+                if (userMenu) userMenu.style.display = 'none';
+            }
+        }
+        
+        // Setup language switcher (always available)
+        this.setupLanguageSwitcher();
+    }
+
+    // Setup user menu functionality
+    setupUserMenu() {
+        const userMenuToggle = document.getElementById('user-menu-toggle');
+        const userDropdown = document.getElementById('user-dropdown');
+        const logoutLink = document.getElementById('logout-link');
+        
+        if (userMenuToggle && userDropdown) {
+            userMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.style.display = userDropdown.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                userDropdown.style.display = 'none';
+            });
+        }
+        
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
+        }
+    }
+
+    // Setup language switcher
+    setupLanguageSwitcher() {
+        const languageSelect = document.getElementById('language-select');
+        if (languageSelect) {
+            languageSelect.value = i18n.getCurrentLanguage();
+            languageSelect.addEventListener('change', (e) => {
+                i18n.setLanguage(e.target.value);
+            });
+        }
+    }
+
+    // Handle user logout
+    async handleLogout() {
+        try {
+            showStatusMessage(i18n.t('logging_out') || 'Logging out...', 'info');
+            authManager.logout();
+            // Redirect will be handled by authManager
+        } catch (error) {
+            console.error('Logout error:', error);
+            showStatusMessage('Logout failed', 'error');
         }
     }
 
@@ -69,17 +185,33 @@ class CommunityResourceApp {
         // Map events
         window.addEventListener('resourceMarkerClick', this.handleResourceMarkerClick.bind(this));
         window.addEventListener('mapClick', this.handleMapClick.bind(this));
+        
+        // Hash change events for navigation
+        window.addEventListener('hashchange', this.handleHashChange.bind(this));
     }
 
     // Load initial application data
     async loadInitialData() {
         try {
+            console.log('Loading initial data...');
+            
+            // Test API connectivity first
+            try {
+                const healthCheck = await api.healthCheck();
+                console.log('API health check successful:', healthCheck);
+            } catch (healthError) {
+                console.error('API health check failed:', healthError);
+                showStatusMessage('Backend API is not responding. Please check if the server is running.', 'error');
+                return;
+            }
+            
             // Load categories for dropdowns
             await this.loadCategories();
-            console.log('Initial data loaded');
+            console.log('Initial data loaded successfully');
         } catch (error) {
             console.error('Error loading initial data:', error);
-            ApiUtils.handleApiError(error, 'loading initial data');
+            showStatusMessage('Failed to load application data: ' + error.message, 'error');
+            // Don't throw error to allow app to continue partially
         }
     }
 
@@ -95,6 +227,9 @@ class CommunityResourceApp {
 
         // Update current section
         this.currentSection = sectionName;
+        
+        // Update URL hash
+        window.location.hash = sectionName;
 
         // Load section-specific data
         try {
@@ -109,6 +244,11 @@ class CommunityResourceApp {
                     await this.loadVolunteerSection();
                     break;
                 case 'admin':
+                    // For now, allow access to admin section without authentication
+                    // TODO: Re-enable authentication check in production
+                    // if (!this.checkAuthenticationForAdmin()) {
+                    //     return;
+                    // }
                     await this.loadAdminSection();
                     break;
             }
@@ -121,13 +261,20 @@ class CommunityResourceApp {
     // Load categories
     async loadCategories() {
         try {
+            console.log('Loading categories from API...');
             const response = await api.getCategories();
-            this.categories = response.data;
+            console.log('Categories API response:', response);
+            
+            this.categories = response.data || [];
+            console.log('Loaded categories:', this.categories.length);
 
             // Populate category filters
             this.populateCategoryFilters();
         } catch (error) {
             console.error('Error loading categories:', error);
+            // Set empty categories array as fallback
+            this.categories = [];
+            this.populateCategoryFilters(); // Still populate with empty array
             throw error;
         }
     }
@@ -655,6 +802,14 @@ class CommunityResourceApp {
         console.log('Map clicked at:', latlng);
         
         // Could be used for adding new resources or emergency requests
+    }
+    
+    // Handle URL hash changes
+    handleHashChange() {
+        const hash = window.location.hash.substring(1);
+        if (hash && ['resources', 'emergency', 'volunteer', 'admin'].includes(hash)) {
+            this.switchSection(hash);
+        }
     }
 }
 

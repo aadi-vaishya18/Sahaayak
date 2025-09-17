@@ -3,33 +3,55 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
 const http = require('http');
 const socketIo = require('socket.io');
 require('dotenv').config();
+
+const { authenticateToken, authorizeRoles } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3002", "http://127.0.0.1:3002"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
   }
 });
 
 const PORT = process.env.PORT || 3001;
 
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3002", "http://127.0.0.1:3002"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+app.use(limiter);
 app.use(morgan('combined'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
-// Routes
+// Public routes
+app.use('/api/auth', require('./routes/auth'));
+
+// Protected routes
 app.use('/api/resources', require('./routes/resources'));
 app.use('/api/emergency-requests', require('./routes/emergencyRequests'));
 app.use('/api/volunteers', require('./routes/volunteers'));
 app.use('/api/categories', require('./routes/categories'));
+
+// Admin only routes (uncomment when implementing admin-specific functionality)
+// app.use('/api/admin', authenticateToken, authorizeRoles('admin'), require('./routes/admin'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

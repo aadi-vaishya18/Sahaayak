@@ -10,25 +10,48 @@ class ApiClient {
     // Generic request method
     async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
+        console.log('Making API request to:', url);
+        
         const config = {
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
             },
+            mode: 'cors',
+            credentials: 'omit', // Changed from 'include' to avoid CORS issues
             ...options
         };
+        
+        console.log('Request config:', config);
 
         try {
             const response = await fetch(url, config);
-            const data = await response.json();
+            console.log('Response received:', response.status, response.statusText);
             
+            // Check if response is ok before trying to parse JSON
             if (!response.ok) {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (jsonError) {
+                    // If JSON parsing fails, use the status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                console.error('API error response:', errorMessage);
+                throw new Error(errorMessage);
             }
             
+            // Parse JSON response
+            const data = await response.json();
+            console.log('API response data:', data);
             return data;
         } catch (error) {
             console.error('API request failed:', error);
+            // Provide more user-friendly error messages
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Unable to connect to server. Please check if the backend is running.');
+            }
             throw error;
         }
     }

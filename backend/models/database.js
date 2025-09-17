@@ -40,8 +40,13 @@ class Database {
     const values = Object.values(data);
     
     const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
-    const result = await this.run(query, values);
-    return result.lastID;
+    try {
+      const result = await this.run(query, values);
+      return result?.lastID || data.id;
+    } catch (error) {
+      console.error(`Error creating record in ${table}:`, error);
+      throw error;
+    }
   }
 
   async findById(table, id) {
@@ -79,18 +84,28 @@ class Database {
   async update(table, id, data) {
     const setClause = Object.keys(data)
       .map(key => `${key} = ?`)
-      .join(', ');
+      .join(', '); 
     const values = [...Object.values(data), id];
     
     const query = `UPDATE ${table} SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-    const result = await this.run(query, values);
-    return result.changes > 0;
+    try {
+      const result = await this.run(query, values);
+      return result?.changes > 0;
+    } catch (error) {
+      console.error(`Error updating record in ${table}:`, error);
+      throw error;
+    }
   }
 
   async delete(table, id) {
     const query = `DELETE FROM ${table} WHERE id = ?`;
-    const result = await this.run(query, [id]);
-    return result.changes > 0;
+    try {
+      const result = await this.run(query, [id]);
+      return result?.changes > 0;
+    } catch (error) {
+      console.error(`Error deleting record from ${table}:`, error);
+      throw error;
+    }
   }
 
   // Custom queries for complex operations

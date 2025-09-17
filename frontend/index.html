@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Community Resource Dashboard</title>
+    <title data-i18n="dashboard_title">Sahaayak - Community Resource Dashboard </title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Kalam:wght@300;400;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
@@ -16,23 +19,66 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <i class="fas fa-heart"></i>
-                    <h1>Community Resource Dashboard</h1>
+                    <div class="logo-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 data-i18n="dashboard_title">Sahaayak</h1>
+                        <div class="subtitle">Community Resource Dashboard</div>
+                    </div>
                 </div>
+                
                 <nav class="nav">
                     <button id="resources-tab" class="nav-btn active">
-                        <i class="fas fa-hospital"></i> Resources
+                        <i class="fas fa-hospital"></i> 
+                        <span data-i18n="resources">Resources</span>
                     </button>
                     <button id="emergency-tab" class="nav-btn">
-                        <i class="fas fa-exclamation-triangle"></i> Emergency
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <span data-i18n="emergency">Emergency</span>
                     </button>
                     <button id="volunteer-tab" class="nav-btn">
-                        <i class="fas fa-hands-helping"></i> Volunteer
+                        <i class="fas fa-hands-helping"></i> 
+                        <span data-i18n="volunteer">Volunteer</span>
                     </button>
                     <button id="admin-tab" class="nav-btn">
-                        <i class="fas fa-cog"></i> Admin
+                        <i class="fas fa-cog"></i> 
+                        <span data-i18n="admin">Admin</span>
                     </button>
                 </nav>
+                
+                <div class="user-controls">
+                    <!-- Language Switcher -->
+                    <div class="language-switch">
+                        <select id="language-select">
+                            <option value="en">English</option>
+                            <option value="hi">हिंदी</option>
+                            <option value="mr">मराठी</option>
+                        </select>
+                    </div>
+                    
+                    <!-- User Menu -->
+                    <div class="user-menu">
+                        <div class="user-avatar" id="user-menu-toggle">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-dropdown" id="user-dropdown" style="display: none;">
+                            <div class="user-info">
+                                <div class="user-name" id="user-name">Admin User</div>
+                                <div class="user-role" id="user-role">Administrator</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="profile-link" class="dropdown-item">
+                                <i class="fas fa-user-cog"></i>
+                                <span data-i18n="profile">Profile</span>
+                            </a>
+                            <a href="#" id="logout-link" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span data-i18n="logout">Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -265,9 +311,49 @@
         <div id="notifications" class="notifications"></div>
     </div>
 
+    <script src="js/auth.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>
     <script src="js/map.js"></script>
     <script src="js/realtime.js"></script>
     <script src="js/app.js"></script>
+    
+    <!-- Initialize app with authentication check -->
+    <script>
+        // Global status message function
+        function showStatusMessage(message, type = 'info', duration = 3000) {
+            const statusContainer = document.getElementById('status-messages');
+            if (!statusContainer) {
+                console.log('[Status]', type.toUpperCase() + ':', message);
+                return;
+            }
+
+            const statusMessage = document.createElement('div');
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.textContent = message;
+
+            statusContainer.appendChild(statusMessage);
+
+            // Auto-remove after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (statusMessage.parentElement) {
+                        statusMessage.remove();
+                    }
+                }, duration);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('DOM loaded, initializing app...');
+                await app.init();
+                showStatusMessage(i18n.t('app_loaded') || 'Application loaded successfully', 'success', 2000);
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                showStatusMessage('Failed to load application: ' + error.message, 'error');
+            }
+        });
+    </script>
 </body>
 </html>
